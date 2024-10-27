@@ -30,13 +30,20 @@ def teamScoring(results: pd.DataFrame, teams: pd.DataFrame, team_type: str, alia
     results['name_cleaned'] = results['name'].str.strip().str.lower()
     # iterate through teams, adding up the scores for each player
     team_scores = []
-    for team in teams['team_name']:
+    for team in teams['name']:
         team_score = 0
+        # Score each player
         for i in range (8):
-            # ADD DOUBLE FOR CAPTAIN
-            player = teams[teams['team_name'] == team][f'{team_type}_player_{i+1}'].values[0]
+            player = teams[teams['name'] == team][f'{team_type}_player_{i+1}'].values[0]
             team_score += playerScoring(results, player, aliases)
-        team_score += bonusPoints(results, teams[teams['team_name'] == team], match, team_type)
+        # Captains score double points
+        if team in captains['name'].values:
+            captain = captains[captains['name'] == team][f'{team_type}_captain'].values[0] # ERROR HERE
+        else:
+            captain = teams[teams['name'] == team][f'{team_type}_player_1'].values[0]
+        team_score += playerScoring(results, captain, aliases)
+        # Bonus points (e.g. for being in own team at beginning of season)
+        team_score += bonusPoints(results, teams[teams['name'] == team], match, team_type)
         team_scores.append(team_score)
     return team_scores
 
