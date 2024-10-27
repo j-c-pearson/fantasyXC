@@ -1,0 +1,11 @@
+name: fantXC
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pandas
+  - ca-certificates
+  - openssl
+  - openpyxl
+prefix: /opt/homebrew/Caskroom/miniforge/base/envs/fantXC
