@@ -1,6 +1,16 @@
 # matchScoring.py
 import pandas as pd
 
+def bonusPoints(results: pd.DataFrame, team: pd.DataFrame, match: str, team_type: str) -> int:
+    # Add bonus points for players in their own team
+    bonus_points = 0
+    if match == 'cuppers_2024':
+        for i in range(8):
+            if team['name'].values[0] == team[f'{team_type}_player_{i+1}'].values[0]: # Only gives point if they spelled their own name consistently
+                print(f'{team['name'].values[0]} is in their own team and so earns a bonus point')
+                bonus_points = 1
+    return bonus_points
+
 def playerScoring(results: pd.DataFrame, player_name: str, aliases: pd.DataFrame) -> int:
     # Clean the player_name by stripping spaces and converting to lowercase
     player_name_cleaned = player_name.strip().lower()
@@ -15,7 +25,7 @@ def playerScoring(results: pd.DataFrame, player_name: str, aliases: pd.DataFrame
         player_score = results[results['name_cleaned'] == player_name_cleaned]['score'].values[0]
         return player_score
 
-def teamScoring(results: pd.DataFrame, teams: pd.DataFrame, team_type: str, aliases:pd.DataFrame) -> pd.Series:
+def teamScoring(results: pd.DataFrame, teams: pd.DataFrame, team_type: str, aliases: pd.DataFrame, captains: pd.DataFrame, match: str) -> pd.Series:
     # Clean the 'name' column in the results DataFrame
     results['name_cleaned'] = results['name'].str.strip().str.lower()
     # iterate through teams, adding up the scores for each player
@@ -23,15 +33,17 @@ def teamScoring(results: pd.DataFrame, teams: pd.DataFrame, team_type: str, alia
     for team in teams['team_name']:
         team_score = 0
         for i in range (8):
+            # ADD DOUBLE FOR CAPTAIN
             player = teams[teams['team_name'] == team][f'{team_type}_player_{i+1}'].values[0]
             team_score += playerScoring(results, player, aliases)
+        team_score += bonusPoints(results, teams[teams['team_name'] == team], match, team_type)
         team_scores.append(team_score)
     return team_scores
 
-def matchScoring(results_women: pd.DataFrame, results_men: pd.DataFrame, teams: pd.DataFrame, match: str, aliases: pd.DataFrame) -> pd.DataFrame:
+def matchScoring(results_women: pd.DataFrame, results_men: pd.DataFrame, teams: pd.DataFrame, match: str, aliases: pd.DataFrame, captains: pd.DataFrame) -> pd.DataFrame:
     # iterate through teams, adding up the scores for each player
-    teams[f'womens_{match}'] = teamScoring(results_women, teams, "womens", aliases)
-    teams[f'mens_{match}'] = teamScoring(results_men, teams, "mens", aliases)
+    teams[f'womens_{match}'] = teamScoring(results_women, teams, "womens", aliases, captains, match)
+    teams[f'mens_{match}'] = teamScoring(results_men, teams, "mens", aliases, captains, match)
     teams[f'total_{match}'] = teams[f'womens_{match}'] + teams[f'mens_{match}']
 
     # Find the highest and lowest scores for combined teams
@@ -65,17 +77,22 @@ def matchScoring(results_women: pd.DataFrame, results_men: pd.DataFrame, teams: 
     return teams
 
 if __name__ == '__main__':
-    # Read in the data
+    # Competition to evaluate
+    # CHANGE THIS TO THE EVENT YOU WANT TO EVALUATE
     match = 'cuppers_2024' # input match to evaluate
+
+
+    # Read in the data
     matchWomen = pd.read_excel(f'raw_results/{match}_women.xlsx')
     matchMen = pd.read_excel(f'raw_results/{match}_men.xlsx')
     teams = pd.read_excel('teams/teams_2024.xlsx')
     aliases = pd.read_excel('teams/aliases.xlsx')
     aliases['alt_name_cleaned'] = aliases['alt_name'].str.strip().str.lower()
     aliases['name_cleaned'] = aliases['name'].str.strip().str.lower()
+    captains = pd.read_excel('teams/captains_2024.xlsx')
 
     # Create columns of sum of men's and women's scores
-    teams = matchScoring(matchWomen, matchMen, teams, match, aliases)
+    teams = matchScoring(matchWomen, matchMen, teams, match, aliases, captains)
 
     # Print the data
     match_scores = teams[['name', 'team_name', f'womens_{match}', f'mens_{match}', f'total_{match}']]
