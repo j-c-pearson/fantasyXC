@@ -1,5 +1,10 @@
 # matchScoring.py
 import pandas as pd
+import numpy as np
+
+from scipy.optimize import milp
+from scipy.optimize import LinearConstraint
+from scipy.optimize import Bounds
 
 def bonusPoints(results: pd.DataFrame, team: pd.DataFrame, match: str, team_type: str) -> int:
     # Add bonus points for players in their own team
@@ -83,6 +88,55 @@ def matchScoring(results_women: pd.DataFrame, results_men: pd.DataFrame, teams: 
     # Return the data
     return teams
 
+def playerCosting(costs: pd.DataFrame, player_name: str, aliases: pd.DataFrame) -> int:
+    # Clean the player_name by stripping spaces and converting to lowercase
+    player_name_cleaned = player_name.strip().lower()
+
+    # if the player is in the costs DataFrame, return the cost
+    if player_name_cleaned in costs['name_cleaned'].values:
+        player_cost = costs[costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
+    # if the player is in the aliases DataFrame, but not the costs DataFrame, try the alt_name
+    elif player_name_cleaned in aliases['name_cleaned'].values:
+        player_name_cleaned = aliases[aliases['name_cleaned'] == player_name_cleaned]['alt_name_cleaned'].values[0]
+        if player_name_cleaned in costs['name_cleaned'].values:
+            player_cost = costs[costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
+        else:
+            print(f'{player_name} is not in a band and so costs 1')
+            player_cost = 1
+    # if the player is not in the costs or aliases DataFrame, return 1
+    else:
+            print(f'{player_name} is not in a band and so costs 1')
+            player_cost = 1       
+    return player_cost
+
+def makeCostMatrix(results: pd.DataFrame, costs: pd.DataFrame, aliases: pd.DataFrame) -> tuple:
+    costs['name_cleaned'] = costs['name'].str.strip().str.lower()
+    # Create a list of names
+    names = results['name'].values
+    # Create a vector of scores
+    score_vector = results['score'].values
+
+    # Create a matrix of costs
+    cost_matrix = np.ones(len(names))
+    for i in range(len(names)):
+        cost_matrix[i] = playerCosting(costs, names[i], aliases)
+    
+    return score_vector, cost_matrix, names
+
+def optimalTeam(results: pd.DataFrame, costs: pd.DataFrame, aliases: pd.DataFrame) -> None:
+    score_vector, cost_matrix, names = makeCostMatrix(results, costs, aliases)
+    constraint_matrix = np.vstack([cost_matrix, np.ones(len(score_vector))])
+    lower_bounds = [0, 8]
+    upper_bounds = [24, 8]
+    constraints = LinearConstraint(constraint_matrix, lower_bounds, upper_bounds)
+    bounds = Bounds(0, 1)
+    # Solve the MILP
+    res = milp(c=-1*score_vector, integrality=[1]*len(score_vector), bounds=bounds, constraints=constraints)
+
+    print(f'Solver has completed with status: {res.message}')
+    print(f'The optimal team is {names[res.x == 1]}')
+    print(f'The optimal team has a score of {-1*res.fun}')
+
 if __name__ == '__main__':
     # Competition to evaluate
     # CHANGE THIS TO THE EVENT YOU WANT TO EVALUATE
@@ -97,14 +151,26 @@ if __name__ == '__main__':
     aliases['alt_name_cleaned'] = aliases['alt_name'].str.strip().str.lower()
     aliases['name_cleaned'] = aliases['name'].str.strip().str.lower()
     captains = pd.read_excel('teams/captains_2024.xlsx')
+    costs = pd.read_excel('teams/costs.xlsx')
+    costs['name_cleaned'] = costs['name'].str.strip().str.lower()
 
     # Create columns of sum of men's and women's scores
     teams = matchScoring(matchWomen, matchMen, teams, match, aliases, captains)
 
     # Print the data
     match_scores = teams[['name', 'team_name', f'womens_{match}', f'mens_{match}', f'total_{match}']]
-    print(match_scores.sort_values(by=f'total_{match}', ascending=False))
+    match_scores = match_scores.sort_values(by=f'total_{match}', ascending=False)
+    
+    print(f'\n\nScores for {match}')
+    print(match_scores)
+    print(f'\n\nWomen\'s scores for {match}')
+    print(match_scores.sort_values(by=f'womens_{match}', ascending=False))
+    print(f'\n\nMen\'s scores for {match}')
+    print(match_scores.sort_values(by=f'mens_{match}', ascending=False))
 
     # save data
-    match_scores.to_csv(f'scores/scores_{match}.csv', index=False)
-    
+    match_scores.to_excel(f'scores/scores_{match}.xlsx', index=False)
+
+    # Compute the optimal teams
+    optimalTeam(matchWomen, costs, aliases)
+    optimalTeam(matchMen, costs, aliases)

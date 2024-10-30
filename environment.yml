@@ -8,4 +8,5 @@ dependencies:
   - ca-certificates
   - openssl
   - openpyxl
+  - scipy
 prefix: /opt/homebrew/Caskroom/miniforge/base/envs/fantXC
