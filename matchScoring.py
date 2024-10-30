@@ -135,7 +135,7 @@ def optimalTeam(results: pd.DataFrame, costs: pd.DataFrame, aliases: pd.DataFram
 
     print(f'Solver has completed with status: {res.message}')
     print(f'The optimal team is {names[res.x == 1]}')
-    print(f'The optimal team has a score of {-1*res.fun}')
+    print(f'The optimal team has a score (pre-captain) of {-1*res.fun}')
 
 if __name__ == '__main__':
     # Competition to evaluate
