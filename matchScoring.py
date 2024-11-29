@@ -140,7 +140,7 @@ def optimalTeam(results: pd.DataFrame, costs: pd.DataFrame, aliases: pd.DataFram
 if __name__ == '__main__':
     # Competition to evaluate
     # CHANGE THIS TO THE EVENT YOU WANT TO EVALUATE
-    match = 'cuppers_2024' # input match to evaluate
+    match = 'bbo_2024' # input match to evaluate
 
 
     # Read in the data

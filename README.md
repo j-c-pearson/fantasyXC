@@ -1,5 +1,8 @@
 # fantasyXC
 Scripts to organise a Fantasy XC competition
+
+Please note that, at the time of writing, I was trying to practice functional programming. 
+This is reflected in a truly horrendous avoidance of class states.
  
 ## Getting started
 Install Python (for example, via miniforge https://github.com/conda-forge/miniforge)
