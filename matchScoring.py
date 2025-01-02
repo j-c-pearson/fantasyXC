@@ -20,15 +20,23 @@ def playerScoring(results: pd.DataFrame, player_name: str, aliases: pd.DataFrame
     # Clean the player_name by stripping spaces and converting to lowercase
     player_name_cleaned = player_name.strip().lower()
 
-    if player_name_cleaned in aliases['alt_name_cleaned'].values:
-        player_name_cleaned = aliases[aliases['alt_name_cleaned'] == player_name_cleaned]['name_cleaned'].values[0]
-    
-    if player_name_cleaned not in results['name_cleaned'].values:
-        print(f'{player_name} is not in the results and so scored 0')
-        return 0
-    else:
+    # if the player is in the results DataFrame, return the score
+    if player_name_cleaned in results['name_cleaned'].values:
         player_score = results[results['name_cleaned'] == player_name_cleaned]['score'].values[0]
         return player_score
+    else: 
+        # if the player is in the aliases DataFrame, but not the results DataFrame, try the alt_name
+        if player_name_cleaned in aliases['alt_name_cleaned'].values:
+            player_name_cleaned = aliases[aliases['alt_name_cleaned'] == player_name_cleaned]['name_cleaned'].values[0]
+        elif player_name_cleaned in aliases['name_cleaned'].values:
+            player_name_cleaned = aliases[aliases['name_cleaned'] == player_name_cleaned]['alt_name_cleaned'].values[0]
+
+        if player_name_cleaned in results['name_cleaned'].values:
+            player_score = results[results['name_cleaned'] == player_name_cleaned]['score'].values[0]
+            return player_score
+        else:
+            print(f'{player_name} is not in the results and so scored 0')
+            return 0
 
 def teamScoring(results: pd.DataFrame, teams: pd.DataFrame, team_type: str, aliases: pd.DataFrame, captains: pd.DataFrame, match: str) -> pd.Series:
     # Clean the 'name' column in the results DataFrame
@@ -89,6 +97,10 @@ def matchScoring(results_women: pd.DataFrame, results_men: pd.DataFrame, teams: 
     return teams
 
 def playerCosting(costs: pd.DataFrame, player_name: str, aliases: pd.DataFrame) -> int:
+    """
+    Function to return the cost of a player
+    Used to create constraints for MILP solver
+    """
     # Clean the player_name by stripping spaces and converting to lowercase
     player_name_cleaned = player_name.strip().lower()
 
@@ -96,6 +108,13 @@ def playerCosting(costs: pd.DataFrame, player_name: str, aliases: pd.DataFrame) 
     if player_name_cleaned in costs['name_cleaned'].values:
         player_cost = costs[costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
     # if the player is in the aliases DataFrame, but not the costs DataFrame, try the alt_name
+    elif player_name_cleaned in aliases['alt_name_cleaned'].values:
+        player_name_cleaned = aliases[aliases['alt_name_cleaned'] == player_name_cleaned]['name_cleaned'].values[0]
+        if player_name_cleaned in costs['name_cleaned'].values:
+            player_cost = costs[costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
+        else:
+            print(f'{player_name} is not in a band and so costs 1')
+            player_cost = 1
     elif player_name_cleaned in aliases['name_cleaned'].values:
         player_name_cleaned = aliases[aliases['name_cleaned'] == player_name_cleaned]['alt_name_cleaned'].values[0]
         if player_name_cleaned in costs['name_cleaned'].values:
@@ -140,7 +159,10 @@ def optimalTeam(results: pd.DataFrame, costs: pd.DataFrame, aliases: pd.DataFram
 if __name__ == '__main__':
     # Competition to evaluate
     # CHANGE THIS TO THE EVENT YOU WANT TO EVALUATE
-    match = 'bbo_2024' # input match to evaluate
+    match = 'varsity_2024' # input match to evaluate
+
+    print('Running matchScoring.py')
+    print('\n\n\n\n~~~~~~~~~~~~~~~~~~~~~~~~~fantXC~~~~~~~~~~~~~~~~~~~~~~~~~\n\n\n\n')
 
 
     # Read in the data
