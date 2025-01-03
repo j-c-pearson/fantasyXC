@@ -74,43 +74,59 @@ class Match:
             team_scores.append(team_score)
         return team_scores
 
-    def matchScoring(self) -> pd.DataFrame:
+    def matchScoring(self, verbose=False) -> pd.DataFrame:
         # iterate through teams, adding up the scores for each player
         self.teams[f'womens_{self.match_name}'] = self.teamScoring(self.matchWomen, "womens")
         self.teams[f'mens_{self.match_name}'] = self.teamScoring(self.matchMen, "mens")
         self.teams[f'total_{self.match_name}'] = self.teams[f'womens_{self.match_name}'] + self.teams[f'mens_{self.match_name}']
 
-        # Find the highest and lowest scores for combined teams
-        max_score = self.teams[f'total_{self.match_name}'].max()
-        max_score_i = self.teams[f'total_{self.match_name}'].idxmax()
-        print(f"\nThe highest scoring team of this match was {self.teams['name'].iloc[max_score_i]} with {max_score}\n")
+        if verbose == True:
+            # Find the highest and lowest scores for combined teams
+            max_score = self.teams[f'total_{self.match_name}'].max()
+            max_score_i = self.teams[f'total_{self.match_name}'].idxmax()
+            print(f"\nThe highest scoring team of this match was {self.teams['name'].iloc[max_score_i]} with {max_score}\n")
 
-        min_score = self.teams[f'total_{self.match_name}'].min()
-        min_score_i = self.teams[f'total_{self.match_name}'].idxmin()
-        print(f"\nThe lowest scoring team of this match was {self.teams['name'].iloc[min_score_i]} with {min_score}\n")
+            min_score = self.teams[f'total_{self.match_name}'].min()
+            min_score_i = self.teams[f'total_{self.match_name}'].idxmin()
+            print(f"\nThe lowest scoring team of this match was {self.teams['name'].iloc[min_score_i]} with {min_score}\n")
 
-        # Find the highest and lowest scores for women's teams
-        max_womens_score = self.teams[f'womens_{self.match_name}'].max()
-        max_womens_score_i = self.teams[f'womens_{self.match_name}'].idxmax()
-        print(f"\nThe highest scoring women's team of this match was {self.teams['name'].iloc[max_womens_score_i]} with {max_womens_score}\n")
+            # Find the highest and lowest scores for women's teams
+            max_womens_score = self.teams[f'womens_{self.match_name}'].max()
+            max_womens_score_i = self.teams[f'womens_{self.match_name}'].idxmax()
+            print(f"\nThe highest scoring women's team of this match was {self.teams['name'].iloc[max_womens_score_i]} with {max_womens_score}\n")
 
-        min_womens_score = self.teams[f'womens_{self.match_name}'].min()
-        min_womens_score_i = self.teams[f'womens_{self.match_name}'].idxmin()
-        print(f"\nThe lowest scoring women's team of this match was {self.teams['name'].iloc[min_womens_score_i]} with {min_womens_score}\n")
+            min_womens_score = self.teams[f'womens_{self.match_name}'].min()
+            min_womens_score_i = self.teams[f'womens_{self.match_name}'].idxmin()
+            print(f"\nThe lowest scoring women's team of this match was {self.teams['name'].iloc[min_womens_score_i]} with {min_womens_score}\n")
 
-        # Find the highest and lowest scores for men's teams
-        max_mens_score = self.teams[f'mens_{self.match_name}'].max()
-        max_mens_score_i = self.teams[f'mens_{self.match_name}'].idxmax()
-        print(f"\nThe highest scoring men's team of this match was {self.teams['name'].iloc[max_mens_score_i]} with {max_mens_score}\n")
+            # Find the highest and lowest scores for men's teams
+            max_mens_score = self.teams[f'mens_{self.match_name}'].max()
+            max_mens_score_i = self.teams[f'mens_{self.match_name}'].idxmax()
+            print(f"\nThe highest scoring men's team of this match was {self.teams['name'].iloc[max_mens_score_i]} with {max_mens_score}\n")
 
-        min_mens_score = self.teams[f'mens_{self.match_name}'].min()
-        min_mens_score_i = self.teams[f'mens_{self.match_name}'].idxmin()
-        print(f"\nThe lowest scoring men's team of this match was {self.teams['name'].iloc[min_mens_score_i]} with {min_mens_score}\n")
+            min_mens_score = self.teams[f'mens_{self.match_name}'].min()
+            min_mens_score_i = self.teams[f'mens_{self.match_name}'].idxmin()
+            print(f"\nThe lowest scoring men's team of this match was {self.teams['name'].iloc[min_mens_score_i]} with {min_mens_score}\n")
+
+        # Print the data
+        match_scores = self.teams[['name', 'team_name', f'womens_{self.match_name}', f'mens_{self.match_name}', f'total_{self.match_name}']]
+        match_scores = match_scores.sort_values(by=f'total_{self.match_name}', ascending=False)
+        
+        if verbose == True:
+            print(f'\n\nScores for {self.match_name}')
+            print(match_scores)
+            print(f'\n\nWomen\'s scores for {self.match_name}')
+            print(match_scores.sort_values(by=f'womens_{self.match_name}', ascending=False))
+            print(f'\n\nMen\'s scores for {self.match_name}')
+            print(match_scores.sort_values(by=f'mens_{self.match_name}', ascending=False))
+
+        # save data
+        match_scores.to_excel(f'scores/scores_{match_name}.xlsx', index=False)
 
         # Return the data
         return self.teams
 
-    def playerCosting(self, costs: pd.DataFrame, player_name: str, aliases: pd.DataFrame) -> int:
+    def playerCosting(self, player_name: str) -> int:
         """
         Function to return the cost of a player
         Used to create constraints for MILP solver
@@ -119,20 +135,20 @@ class Match:
         player_name_cleaned = player_name.strip().lower()
 
         # if the player is in the costs DataFrame, return the cost
-        if player_name_cleaned in costs['name_cleaned'].values:
-            player_cost = costs[costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
+        if player_name_cleaned in self.costs['name_cleaned'].values:
+            player_cost = self.costs[self.costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
         # if the player is in the aliases DataFrame, but not the costs DataFrame, try the alt_name
-        elif player_name_cleaned in aliases['alt_name_cleaned'].values:
-            player_name_cleaned = aliases[aliases['alt_name_cleaned'] == player_name_cleaned]['name_cleaned'].values[0]
-            if player_name_cleaned in costs['name_cleaned'].values:
-                player_cost = costs[costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
+        elif player_name_cleaned in self.aliases['alt_name_cleaned'].values:
+            player_name_cleaned = self.aliases[self.aliases['alt_name_cleaned'] == player_name_cleaned]['name_cleaned'].values[0]
+            if player_name_cleaned in self.costs['name_cleaned'].values:
+                player_cost = self.costs[self.costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
             else:
                 print(f'{player_name} is not in a band and so costs 1')
                 player_cost = 1
-        elif player_name_cleaned in aliases['name_cleaned'].values:
-            player_name_cleaned = aliases[aliases['name_cleaned'] == player_name_cleaned]['alt_name_cleaned'].values[0]
-            if player_name_cleaned in costs['name_cleaned'].values:
-                player_cost = costs[costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
+        elif player_name_cleaned in self.aliases['name_cleaned'].values:
+            player_name_cleaned = self.aliases[self.aliases['name_cleaned'] == player_name_cleaned]['alt_name_cleaned'].values[0]
+            if player_name_cleaned in self.costs['name_cleaned'].values:
+                player_cost = self.costs[self.costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
             else:
                 print(f'{player_name} is not in a band and so costs 1')
                 player_cost = 1
@@ -152,7 +168,7 @@ class Match:
         # Create a matrix of costs
         cost_matrix = np.ones(len(names))
         for i in range(len(names)):
-            cost_matrix[i] = self.playerCosting(self.costs, names[i], self.aliases)
+            cost_matrix[i] = self.playerCosting(names[i])
         
         return score_vector, cost_matrix, names
 
@@ -174,6 +190,89 @@ class Match:
         match_to_score.optimalTeam(self.matchWomen)
         match_to_score.optimalTeam(self.matchMen)
         
+class Teams:
+    def __init__(self):
+        # Read in the data
+        self.teams = pd.read_excel('teams/teams_2024.xlsx')
+        self.aliases = pd.read_excel('teams/aliases.xlsx')
+        self.aliases['alt_name_cleaned'] = self.aliases['alt_name'].str.strip().str.lower()
+        self.aliases['name_cleaned'] = self.aliases['name'].str.strip().str.lower()
+        self.captains = pd.read_excel('teams/captains_2024.xlsx')
+        self.costs = pd.read_excel('teams/costs.xlsx')
+        self.costs['name_cleaned'] = self.costs['name'].str.strip().str.lower()
+
+    def playerCosting(self, player_name: str) -> int:
+        """
+        Function to return the cost of a player
+        Used to create constraints for MILP solver
+        """
+        # Clean the player_name by stripping spaces and converting to lowercase
+        player_name_cleaned = player_name.strip().lower()
+
+        # if the player is in the costs DataFrame, return the cost
+        if player_name_cleaned in self.costs['name_cleaned'].values:
+            player_cost = self.costs[self.costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
+        # if the player is in the aliases DataFrame, but not the costs DataFrame, try the alt_name
+        elif player_name_cleaned in self.aliases['alt_name_cleaned'].values:
+            player_name_cleaned = self.aliases[self.aliases['alt_name_cleaned'] == player_name_cleaned]['name_cleaned'].values[0]
+            if player_name_cleaned in self.costs['name_cleaned'].values:
+                player_cost = self.costs[self.costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
+            else:
+                print(f'{player_name} is not in a band and so costs 1')
+                player_cost = 1
+        elif player_name_cleaned in self.aliases['name_cleaned'].values:
+            player_name_cleaned = self.aliases[self.aliases['name_cleaned'] == player_name_cleaned]['alt_name_cleaned'].values[0]
+            if player_name_cleaned in self.costs['name_cleaned'].values:
+                player_cost = self.costs[self.costs['name_cleaned'] == player_name_cleaned]['cost'].values[0]
+            else:
+                print(f'{player_name} is not in a band and so costs 1')
+                player_cost = 1
+        # if the player is not in the costs or aliases DataFrame, return 1
+        else:
+                print(f'{player_name} is not in a band and so costs 1')
+                player_cost = 1       
+        return player_cost
+    
+    def teamCosting(self, team_type: str) -> pd.Series:
+        # iterate through teams, adding up the scores for each player
+        team_costs = []
+        for team in self.teams['name']:
+            team_cost = 0
+            # Cost each player
+            for i in range (8):
+                player_name = self.teams[self.teams['name'] == team][f'{team_type}_player_{i+1}'].values[0]
+                team_cost += self.playerCosting(player_name)
+            team_costs.append(team_cost)
+        return team_costs
+    
+    def find_team_costs(self) -> pd.DataFrame:
+        self.teams['womens_cost'] = self.teamCosting("womens")
+        self.teams['mens_cost'] = self.teamCosting("mens")
+        return self.teams
+    
+    def check_team_costs(self):
+        team_costs = self.find_team_costs()
+        print('\n\n\n\n~~~~~~~~~~~~~~~~~~~~~~~~~Team Costs~~~~~~~~~~~~~~~~~~~~~~~~~\n\n\n\n')
+        print(team_costs)
+        over_budget_teams = team_costs[(team_costs['womens_cost'] > 24) | (team_costs['mens_cost'] > 24)]
+        print('\n\n\n\n~~~~~~~~~~~~~~~~~~~~~~~~~Teams Over Budget~~~~~~~~~~~~~~~~~~~~~~~~~\n\n\n\n')
+        print(over_budget_teams)
+
+    def check_new_costs(self):
+        # read new costs file
+        self.costs_old = self.costs
+        self.costs = pd.read_excel('teams/costs_new.xlsx')
+        self.costs['name_cleaned'] = self.costs['name'].str.strip().str.lower()
+        team_costs = self.find_team_costs()
+        print('\n\n\n\n~~~~~~~~~~~~~~~~~~~~~~~~~New Team Costs~~~~~~~~~~~~~~~~~~~~~~~~~\n\n\n\n')
+        print(team_costs)
+        additional_budget_teams = team_costs[(team_costs['womens_cost'] > 24) | (team_costs['mens_cost'] > 24)]
+        print('\n\n\n\n~~~~~~~~~~~~~~~~~~~~~~~~~Teams with additional Budget~~~~~~~~~~~~~~~~~~~~~~~~~\n\n\n\n')
+        print(additional_budget_teams)
+        # revert to old costs
+        self.costs_new = self.costs
+        self.costs = self.costs_old
+
 
 if __name__ == '__main__':
     # Competition to evaluate
@@ -186,22 +285,10 @@ if __name__ == '__main__':
     match_to_score = Match(match_name)
 
     # Create columns of sum of men's and women's scores
-    teams = match_to_score.matchScoring()
-
-    # Print the data
-    match_scores = teams[['name', 'team_name', f'womens_{match_name}', f'mens_{match_name}', f'total_{match_name}']]
-    match_scores = match_scores.sort_values(by=f'total_{match_name}', ascending=False)
-    
-    print(f'\n\nScores for {match_name}')
-    print(match_scores)
-    print(f'\n\nWomen\'s scores for {match_name}')
-    print(match_scores.sort_values(by=f'womens_{match_name}', ascending=False))
-    print(f'\n\nMen\'s scores for {match_name}')
-    print(match_scores.sort_values(by=f'mens_{match_name}', ascending=False))
-
-    # save data
-    match_scores.to_excel(f'scores/scores_{match_name}.xlsx', index=False)
+    teams = match_to_score.matchScoring(verbose=True)
 
     # Compute the optimal teams
     match_to_score.optimalTeams()
-    
+
+    teams = Teams()
+    teams.check_team_costs()

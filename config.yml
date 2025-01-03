@@ -1,0 +1,22 @@
+matches:
+  - name: cuppers_2024
+    date: 2024-10-26
+    weight: 1
+  - name: bbo_2024
+    date: 2024-11-17
+    weight: 1
+  - name: varsity_2024
+    date: 2024-11-30
+    weight: 1.5
+  - name: oldblues_2024
+    date: 2024-12-07
+    weight: 0.5
+  - name: county_champs_2025
+    date: 2025-01-13
+    weight: 1
+  - name: bucs_2025
+    date: 2025-02-01
+    weight: 1.25
+  - name: nationals_2025
+    date: 2025-02-22
+    weight: 1
